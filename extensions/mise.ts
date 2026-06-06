@@ -11,6 +11,7 @@
  */
 
 import { existsSync } from "node:fs";
+import { execFile } from "node:child_process/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
@@ -29,28 +30,35 @@ function findMiseConfig(cwd: string): string | null {
 	return null;
 }
 
-function getMiseBinary(): string {
-	const locations = [
-		"/usr/local/bin/mise",
-		join(process.env.HOME ?? "/root", ".local/bin/mise"),
-	];
-	for (const loc of locations) {
-		if (existsSync(loc)) return loc;
-	}
-	return "mise";
-}
-
 export default function (pi: ExtensionAPI) {
 	let miseActive = false;
-	let miseBinary = "mise";
+	const miseBinary = "mise";
 
 	pi.on("session_start", async (_event, ctx) => {
 		miseActive = false;
 
+		// Skip if mise is not installed
+		try {
+			await execFile(miseBinary, ["--version"], { stdio: "pipe" });
+		} catch {
+			if (ctx.hasUI) {
+				ctx.ui.notify("pi-mise: mise not found in PATH, skipping activation", "warn");
+			}
+			return;
+		}
+
 		const config = findMiseConfig(ctx.cwd);
 		if (!config) return;
 
-		miseBinary = getMiseBinary();
+		// Trust the config so mise activate won't error
+		try {
+			await execFile(miseBinary, ["trust", config], {
+				cwd: ctx.cwd,
+			});
+		} catch {
+			// trust may fail if already trusted or if mise is misconfigured
+			// proceed anyway — activation will surface the real error
+		}
 
 		if (!ctx.hasUI) {
 			// Non-interactive mode — activate without prompting
@@ -68,18 +76,6 @@ export default function (pi: ExtensionAPI) {
 			return;
 		}
 
-		// Trust the config so mise activate won't error
-		const { execSync } = await import("node:child_process");
-		try {
-			execSync(`${miseBinary} trust ${config}`, {
-				cwd: ctx.cwd,
-				stdio: "pipe",
-			});
-		} catch {
-			// trust may fail if already trusted or if mise is misconfigured
-			// proceed anyway — activation will surface the real error
-		}
-
 		miseActive = true;
 		ctx.ui.notify(`mise activated (${config})`, "success");
 	});
@@ -94,9 +90,7 @@ export default function (pi: ExtensionAPI) {
 		if (!miseActive) return;
 
 		if (isToolCallEventType("bash", event)) {
-			if (!event.input.command.includes("mise activate")) {
-				event.input.command = `eval "$(${miseBinary} activate bash)" && ${event.input.command}`;
-			}
+			event.input.command = `eval "$(${miseBinary} activate bash)" && ${event.input.command}`;
 		}
 	});
 }
