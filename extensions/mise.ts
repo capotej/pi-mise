@@ -6,12 +6,11 @@
  * LLM. Contributes the mise skill for edge cases (install, trust, tasks).
  *
  * - On session start, scans cwd for mise config files
- * - Asks the user to confirm activation (and trusts the config)
+ * - Automatically trusts the config (idempotent, safe)
  * - Prepends `eval "$(mise activate bash)"` to every bash tool call
  */
 
 import { existsSync } from "node:fs";
-import { execFile } from "node:child_process/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
@@ -39,7 +38,7 @@ export default function (pi: ExtensionAPI) {
 
 		// Skip if mise is not installed
 		try {
-			await execFile(miseBinary, ["--version"], { stdio: "pipe" });
+			await pi.exec(miseBinary, ["--version"], {});
 		} catch {
 			if (ctx.hasUI) {
 				ctx.ui.notify("pi-mise: mise not found in PATH, skipping activation", "warn");
@@ -48,11 +47,13 @@ export default function (pi: ExtensionAPI) {
 		}
 
 		const config = findMiseConfig(ctx.cwd);
-		if (!config) return;
+		if (!config) {
+			return;
+		}
 
 		// Trust the config so mise activate won't error
 		try {
-			await execFile(miseBinary, ["trust", config], {
+			await pi.exec(miseBinary, ["trust", config], {
 				cwd: ctx.cwd,
 			});
 		} catch {
@@ -60,34 +61,23 @@ export default function (pi: ExtensionAPI) {
 			// proceed anyway — activation will surface the real error
 		}
 
-		if (!ctx.hasUI) {
-			// Non-interactive mode — activate without prompting
-			miseActive = true;
-			return;
-		}
-
-		const confirmed = await ctx.ui.confirm(
-			"mise auto-activation",
-			`Found ${config}. Activate mise and trust this config?`,
-		);
-
-		if (!confirmed) {
-			ctx.ui.notify("mise activation skipped", "info");
-			return;
-		}
-
 		miseActive = true;
-		ctx.ui.notify(`mise activated (${config})`, "success");
+
+		if (ctx.hasUI) {
+			ctx.ui.notify(`mise activated (${config})`, "success");
+		}
 	});
 
-	pi.on("resources_discover", async () => {
+	pi.on("resources_discover", () => {
 		return {
 			skillPaths: [join(__dirname, "..", "skills", "mise")],
 		};
 	});
 
-	pi.on("tool_call", async (event, _ctx) => {
-		if (!miseActive) return;
+	pi.on("tool_call", (event, _ctx) => {
+		if (!miseActive) {
+			return;
+		}
 
 		if (isToolCallEventType("bash", event)) {
 			event.input.command = `eval "$(${miseBinary} activate bash)" && ${event.input.command}`;
