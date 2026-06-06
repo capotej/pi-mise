@@ -1,0 +1,86 @@
+---
+name: mise
+description: Manage tool versions with mise. Use when a repository has a .mise.toml or mise.toml file — activate mise to get the correct toolchain versions without system-wide installs.
+author: hermclaw
+---
+
+## Overview
+
+mise (https://mise.jdx.dev/) is a polyglot version manager that manages tool versions per-project via `.mise.toml` or `mise.toml` files. It replaces asdf/rbenv/nvm/etc.
+
+## When to Use
+
+- A repository contains a `mise.toml` or `.mise.toml` file
+- Need to use a specific version of Ruby, Node.js, Python, Bun, Go, or any supported tool
+- Want to avoid system-wide tool version conflicts
+
+## Setup
+
+### Installation
+
+Installed via `curl https://mise.run | sh`. Actual location: `/usr/local/bin/mise`.
+Precompiled binaries enabled via `mise settings ruby.compile=false` to avoid slow source compilation.
+
+### Activation (eval pattern)
+
+Before running commands that need mise-managed tools, activate in your shell:
+
+```bash
+eval "$(/usr/local/bin/mise activate bash)"
+```
+
+Activation must be included in every `terminal()` call chain, or run once at the start of a background session.
+
+> **Note:** If the pi-mise extension is active, mise activation is already prepended to every bash command. Do NOT manually add `eval "$(mise activate bash)"` — it is handled automatically.
+
+### Running Commands via `mise exec` (preferred for single commands)
+
+For one-off commands, `mise exec` avoids the need for `eval activate`:
+
+```bash
+cd /path/to/repo && /usr/local/bin/mise exec -- bundle install
+cd /path/to/repo && /usr/local/bin/mise exec -- rails test
+/usr/local/bin/mise exec --node@20 -- which node
+```
+
+### Running Tasks
+
+If `mise.toml` defines `[tasks]`, run them with:
+
+```bash
+cd /path/to/repo && mise run <task_name>
+```
+
+### Installing Tools
+
+```bash
+cd /path/to/repo && eval "$(mise activate bash)" && mise install
+```
+
+### Trust
+
+Untrusted `.mise.toml` files (fresh clones, new additions) must be trusted:
+
+```bash
+cd /path/to/repo && mise trust
+```
+
+Trust persists until the file changes — if `.mise.toml` or `mise.toml` is modified, re-trust is required.
+
+## Standard Pattern
+
+```bash
+cd /path/to/repo \
+  && eval "$(mise activate bash)" \
+  && your_command_here
+```
+
+## Pitfalls
+
+- **Activation is per-session**: `mise activate` modifies PATH and env vars for the current shell only. It does NOT persist across separate `terminal()` calls unless chained into each command.
+- **Trust is per-file**: `mise trust` trusts a specific config file. If the file is modified or replaced, trust is revoked and must be re-applied.
+- **Compiling from source is slow**: Ruby compilation takes 5+ minutes and can hit timeouts. Precompiled binaries are configured via `ruby.compile=false` — if this setting is missing on a fresh install, set it before `mise install`.
+- **System dependencies for Ruby gems**: Some gems require system-level development headers. For example, `psych` (a Rails dependency) requires `libyaml-dev` for YAML support. Install missing headers with `sudo apt-get install libyaml-dev` (and similar for other gems). If a gem fails to compile with a "missing *.h" error, search for and install the appropriate `-dev` package.
+- **Working directory matters**: mise resolves tool versions from the current working directory upward through parent directories looking for config files. Always `cd` into the repo first, or use `mise exec -C <dir>` to specify explicitly.
+- **Config file naming**: mise accepts both `mise.toml` and `.mise.toml` (hidden). Some projects use `.tool-versions` (asdf-compatible). All three are recognized.
+- **Bundler is NOT a mise tool**: `bundler` (or `bundle`) is not in the mise tool registry. Do not add it to `[tools]` in mise.toml — it is managed by RubyGems/Ruby itself. Common tools that ARE supported: ruby, bun, node, python, go, java, etc.
