@@ -13,8 +13,8 @@
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { isToolCallEventType } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { isToolCallEventType } from "@earendil-works/pi-coding-agent";
 
 const MISE_CONFIG_FILES = ["mise.toml", ".mise.toml", ".tool-versions"];
 
@@ -41,7 +41,7 @@ export default function (pi: ExtensionAPI) {
 			await pi.exec(miseBinary, ["--version"], {});
 		} catch {
 			if (ctx.hasUI) {
-				ctx.ui.notify("pi-mise: mise not found in PATH, skipping activation", "warn");
+				ctx.ui.notify("pi-mise: mise not found in PATH, skipping activation", "warning");
 			}
 			return;
 		}
@@ -64,7 +64,7 @@ export default function (pi: ExtensionAPI) {
 		miseActive = true;
 
 		if (ctx.hasUI) {
-			ctx.ui.notify(`mise activated (${config})`, "success");
+			ctx.ui.notify(`mise activated (${config})`, "info");
 		}
 	});
 

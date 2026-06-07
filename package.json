@@ -1,6 +1,7 @@
 {
 	"name": "@capotej/pi-mise",
 	"version": "1.0.0",
+	"type": "module",
 	"description": "Automatically activates mise when a mise.toml or .mise.toml file is found in the project",
 	"keywords": ["pi-package", "mise"],
 	"license": "MIT",
@@ -9,15 +10,20 @@
 		"type": "git",
 		"url": "git+https://github.com/capotej/pi-mise.git"
 	},
-	"files": ["extensions", "skills", "README.md", "LICENSE"],
+	"files": ["dist", "skills", "README.md", "LICENSE"],
 	"pi": {
-		"extensions": ["./extensions"],
+		"extensions": ["./dist/extensions"],
 		"skills": ["./skills"]
 	},
 	"devDependencies": {
-		"@biomejs/biome": "1.9.4"
+		"@biomejs/biome": "1.9.4",
+		"@earendil-works/pi-coding-agent": "^0.78.1",
+		"@types/node": "^22.0.0",
+		"typescript": "^6.0.2"
 	},
 	"scripts": {
+		"build": "tsc",
+		"prepare": "tsc",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
 		"format": "biome format --write ."
