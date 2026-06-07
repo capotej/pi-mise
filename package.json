@@ -1,6 +1,6 @@
 {
 	"name": "@capotej/pi-mise",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"type": "module",
 	"description": "Automatically activates mise when a mise.toml or .mise.toml file is found in the project",
 	"keywords": ["pi-package", "mise"],

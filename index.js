@@ -59,7 +59,7 @@ export default function (pi) {
     });
     pi.on("resources_discover", () => {
         return {
-            skillPaths: [join(__dirname, "..", "skills", "mise")],
+            skillPaths: [join(__dirname, "skills", "mise")],
         };
     });
     pi.on("tool_call", (event, _ctx) => {
