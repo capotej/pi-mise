@@ -1,6 +1,6 @@
 {
 	"name": "@capotej/pi-mise",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"type": "module",
 	"description": "Automatically activates mise when a mise.toml or .mise.toml file is found in the project",
 	"keywords": ["pi-package", "mise"],
@@ -12,7 +12,7 @@
 	},
 	"files": ["dist", "skills", "README.md", "LICENSE"],
 	"pi": {
-		"extensions": ["./dist/extensions/mise.js"],
+		"extensions": ["./dist/index.js"],
 		"skills": ["./skills"]
 	},
 	"peerDependencies": {

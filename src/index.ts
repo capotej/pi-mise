@@ -70,7 +70,7 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("resources_discover", () => {
 		return {
-			skillPaths: [join(__dirname, "..", "..", "skills", "mise")],
+			skillPaths: [join(__dirname, "..", "skills", "mise")],
 		};
 	});
 
