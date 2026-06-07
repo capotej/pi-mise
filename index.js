@@ -10,11 +10,9 @@
  * - Prepends `eval "$(mise activate bash)"` to every bash tool call
  */
 import { existsSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { isToolCallEventType } from "@mariozechner/pi-coding-agent";
 const MISE_CONFIG_FILES = ["mise.toml", ".mise.toml", ".tool-versions"];
-const __dirname = dirname(fileURLToPath(import.meta.url));
 function findMiseConfig(cwd) {
     for (const file of MISE_CONFIG_FILES) {
         if (existsSync(join(cwd, file))) {
@@ -26,6 +24,7 @@ function findMiseConfig(cwd) {
 export default function (pi) {
     let miseActive = false;
     const miseBinary = "mise";
+    // Debug: confirm extension loaded
     pi.on("session_start", async (_event, ctx) => {
         miseActive = false;
         // Skip if mise is not installed
@@ -36,6 +35,7 @@ export default function (pi) {
             if (ctx.hasUI) {
                 ctx.ui.notify("pi-mise: mise not found in PATH, skipping activation", "warning");
             }
+            console.log("[pi-mise] mise not found in PATH, skipping activation");
             return;
         }
         const config = findMiseConfig(ctx.cwd);
@@ -56,11 +56,7 @@ export default function (pi) {
         if (ctx.hasUI) {
             ctx.ui.notify(`mise activated (${config})`, "info");
         }
-    });
-    pi.on("resources_discover", () => {
-        return {
-            skillPaths: [join(__dirname, "skills", "mise")],
-        };
+        console.log(`[pi-mise] mise activated (${config})`);
     });
     pi.on("tool_call", (event, _ctx) => {
         if (!miseActive) {
