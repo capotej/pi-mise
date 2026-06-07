@@ -13,8 +13,8 @@
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { isToolCallEventType } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { isToolCallEventType } from "@mariozechner/pi-coding-agent";
 
 const MISE_CONFIG_FILES = ["mise.toml", ".mise.toml", ".tool-versions"];
 
@@ -70,7 +70,7 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("resources_discover", () => {
 		return {
-			skillPaths: [join(__dirname, "..", "skills", "mise")],
+			skillPaths: [join(__dirname, "..", "..", "skills", "mise")],
 		};
 	});
 
